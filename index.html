@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🎨 Colour & Learn — с палитрой</title>
+    <title>🎨 Colour & Learn — Describe!</title>
     <style>
         * {
             margin: 0;
@@ -49,6 +49,8 @@
             margin-bottom: 14px;
             border-left: 5px solid #e94560;
             text-align: center;
+            min-height: 80px;
+            transition: 0.3s;
         }
         .task .question {
             font-size: 20px;
@@ -75,6 +77,40 @@
         .task .speaker-btn:hover {
             transform: scale(1.2);
         }
+
+        /* ===== ФИНАЛЬНОЕ ЗАДАНИЕ ===== */
+        .final-task {
+            display: none;
+            background: #e8f8f5;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+            border-left: 5px solid #00b894;
+            text-align: center;
+        }
+        .final-task .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #00b894;
+        }
+        .final-task .example {
+            font-size: 18px;
+            color: #2d3436;
+            margin-top: 6px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid #dfe6e9;
+        }
+        .final-task .example .speaker-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
         canvas {
             display: block;
             width: 100%;
@@ -116,9 +152,6 @@
             transform: scale(1.15);
             box-shadow: 0 0 0 3px #fff, 0 0 0 6px #2d3436;
         }
-        .color-btn .label {
-            display: none;
-        }
 
         /* ===== ИНСТРУМЕНТЫ ===== */
         .tools {
@@ -138,6 +171,8 @@
             color: white;
             cursor: pointer;
             transition: 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .tools button:hover {
             transform: scale(1.05);
@@ -191,6 +226,18 @@
         .selected-color-info span {
             font-weight: bold;
         }
+        .hidden {
+            display: none;
+        }
+        .completed-badge {
+            display: inline-block;
+            background: #00b894;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -211,32 +258,42 @@
             <div class="hint-text">👆 1. Choose a colour below &nbsp;|&nbsp; 2. Tap on the picture</div>
         </div>
 
+        <!-- ===== ФИНАЛЬНОЕ ЗАДАНИЕ ===== -->
+        <div class="final-task" id="finalTask">
+            <div class="title">🎉 Now describe the picture!</div>
+            <div class="example" id="exampleText">
+                📖 <span id="descriptionText">The girl has got a blue jacket, green trousers, pink boots, a pink cap, a yellow scarf, a purple backpack and brown hair.</span>
+                <button class="speaker-btn" id="speakFinalBtn">🔊</button>
+            </div>
+            <div style="margin-top:8px; font-size:14px; color:#636e72;">
+                ✅ All done! Great job! 🌟
+            </div>
+        </div>
+
         <!-- ===== КАНВАС ===== -->
         <canvas id="canvas" width="500" height="500"></canvas>
 
         <!-- ===== ПАЛИТРА ===== -->
-        <div class="palette" id="palette">
-            <!-- Кнопки цветов будут созданы скриптом -->
-        </div>
+        <div class="palette" id="palette"></div>
 
         <!-- ===== ИНФО О ВЫБРАННОМ ЦВЕТЕ ===== -->
         <div class="selected-color-info" id="selectedColorInfo">
-            🖌️ Выбран: <span id="selectedColorName" style="color:#ff6b6b;">Красный</span>
+            🖌️ Selected: <span id="selectedColorName" style="color:#ff6b6b;">Red</span>
         </div>
 
         <!-- ===== ИНСТРУМЕНТЫ ===== -->
         <div class="tools">
-            <button class="reset" id="resetBtn">🔄 Сброс</button>
-            <button class="save" id="saveBtn">💾 Сохранить</button>
-            <button class="next" id="nextBtn">➡️ Следующее</button>
-            <button class="speak" id="speakBtn2">🔊 Озвучить</button>
+            <button class="reset" id="resetBtn">🔄 Reset</button>
+            <button class="save" id="saveBtn">💾 Save</button>
+            <button class="next" id="nextBtn">➡️ Next</button>
+            <button class="speak" id="speakBtn2">🔊 Speak</button>
         </div>
 
         <!-- ===== СТАТУС ===== -->
-        <div class="status" id="status">⏳ <span class="loading">Загрузка...</span></div>
+        <div class="status" id="status">⏳ <span class="loading">Loading...</span></div>
 
         <!-- ===== ПРОГРЕСС ===== -->
-        <div class="progress" id="progress">Задание 1 из 7</div>
+        <div class="progress" id="progress">Task 1 of 7</div>
 
         <!-- ===== ФУТЕР ===== -->
         <div class="footer">✨ Click on white areas to colour them!</div>
@@ -244,7 +301,7 @@
 
     <script>
         // ============================================================
-        // 1. ЗАДАНИЯ (твои)
+        // 1. ЗАДАНИЯ
         // ============================================================
         const tasks = [
             { text: "Colour the trousers green", color: '#00b894' },
@@ -257,25 +314,26 @@
         ];
 
         // ============================================================
-        // 2. ПАЛИТРА (цвета + названия для отображения)
+        // 2. ПАЛИТРА
         // ============================================================
         const paletteColors = [
-            { hex: '#ff0000', name: 'Красный' },
-            { hex: '#00b894', name: 'Зелёный' },
-            { hex: '#fdcb6e', name: 'Жёлтый' },
-            { hex: '#0984e3', name: 'Синий' },
-            { hex: '#fd79a8', name: 'Розовый' },
-            { hex: '#6c5ce7', name: 'Фиолетовый' },
-            { hex: '#8B4513', name: 'Коричневый' },
-            { hex: '#ff9f43', name: 'Оранжевый' },
-            { hex: '#ffffff', name: 'Белый' },
-            { hex: '#000000', name: 'Чёрный' },
+            { hex: '#ff0000', name: 'Red' },
+            { hex: '#00b894', name: 'Green' },
+            { hex: '#fdcb6e', name: 'Yellow' },
+            { hex: '#0984e3', name: 'Blue' },
+            { hex: '#fd79a8', name: 'Pink' },
+            { hex: '#6c5ce7', name: 'Purple' },
+            { hex: '#8B4513', name: 'Brown' },
+            { hex: '#ff9f43', name: 'Orange' },
+            { hex: '#ffffff', name: 'White' },
+            { hex: '#000000', name: 'Black' },
         ];
 
         let currentTaskIndex = 0;
         let isReady = false;
         let originalData = null;
-        let selectedColor = paletteColors[0]; // по умолчанию красный
+        let selectedColor = paletteColors[0];
+        let completedTasks = new Array(tasks.length).fill(false);
 
         // ============================================================
         // 3. ЭЛЕМЕНТЫ
@@ -288,17 +346,21 @@
         const nextBtn = document.getElementById('nextBtn');
         const speakBtn = document.getElementById('speakBtn');
         const speakBtn2 = document.getElementById('speakBtn2');
+        const speakFinalBtn = document.getElementById('speakFinalBtn');
         const statusEl = document.getElementById('status');
         const sentenceText = document.getElementById('sentenceText');
         const progress = document.getElementById('progress');
         const selectedColorName = document.getElementById('selectedColorName');
+        const taskBlock = document.getElementById('taskBlock');
+        const finalTask = document.getElementById('finalTask');
+        const descriptionText = document.getElementById('descriptionText');
 
         // ============================================================
         // 4. ОЗВУЧКА
         // ============================================================
         function speakText(text) {
             if (!window.speechSynthesis) {
-                statusEl.innerHTML = '⚠️ <span style="color:#e94560;">Озвучка не поддерживается</span>';
+                statusEl.innerHTML = '⚠️ <span style="color:#e94560;">Speech not supported</span>';
                 return;
             }
             window.speechSynthesis.cancel();
@@ -341,12 +403,12 @@
                 originalData = new Uint8ClampedArray(imageData.data);
                 isReady = true;
 
-                statusEl.innerHTML = '✅ <span class="ready">Готово! Выбери цвет и раскрашивай!</span>';
+                statusEl.innerHTML = '✅ <span class="ready">Ready! Choose a colour and paint!</span>';
                 updateTask();
             };
 
             img.onerror = function() {
-                statusEl.innerHTML = '❌ <span style="color:#e94560;">Файл travel.jpg не найден!</span>';
+                statusEl.innerHTML = '❌ <span style="color:#e94560;">File travel.jpg not found!</span>';
                 drawTestImage();
             };
         }
@@ -415,7 +477,7 @@
             const imageData = ctx.getImageData(0, 0, w, h);
             originalData = new Uint8ClampedArray(imageData.data);
             isReady = true;
-            statusEl.innerHTML = '✅ <span class="ready">Тестовая раскраска</span>';
+            statusEl.innerHTML = '✅ <span class="ready">Test picture</span>';
             updateTask();
         }
 
@@ -444,31 +506,60 @@
 
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    // Снимаем активность со всех
                     document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     selectedColor = paletteColors[parseInt(this.dataset.index)];
                     selectedColorName.textContent = selectedColor.name;
                     selectedColorName.style.color = selectedColor.hex;
-                    statusEl.innerHTML = `🎨 <span class="ready">Выбран: ${selectedColor.name}</span>`;
+                    statusEl.innerHTML = `🎨 <span class="ready">Selected: ${selectedColor.name}</span>`;
                 });
 
                 paletteEl.appendChild(btn);
             });
-            // Устанавливаем начальный цвет
             selectedColorName.textContent = paletteColors[0].name;
             selectedColorName.style.color = paletteColors[0].hex;
         }
 
         // ============================================================
-        // 8. ОБНОВЛЕНИЕ ЗАДАНИЯ
+        // 8. ПРОВЕРКА ВСЕХ ЗАДАНИЙ
+        // ============================================================
+        function checkAllCompleted() {
+            // Проверяем, все ли задания выполнены (все области закрашены)
+            // Для простоты считаем, что если пользователь прошёл все задания, то всё готово
+            // Но мы будем считать, что задание выполнено, если на него нажали "Next"
+            const allDone = completedTasks.every(v => v === true);
+            if (allDone && currentTaskIndex === tasks.length - 1) {
+                showFinalTask();
+            }
+        }
+
+        function showFinalTask() {
+            taskBlock.style.display = 'none';
+            finalTask.style.display = 'block';
+            statusEl.innerHTML = '🎉 <span class="ready">All tasks completed! Great job!</span>';
+            progress.textContent = '🎯 All done!';
+            // Озвучиваем финальное описание
+            setTimeout(() => {
+                speakText(descriptionText.textContent);
+            }, 500);
+        }
+
+        // ============================================================
+        // 9. ОБНОВЛЕНИЕ ЗАДАНИЯ
         // ============================================================
         function updateTask() {
+            if (currentTaskIndex >= tasks.length) {
+                showFinalTask();
+                return;
+            }
+
             const task = tasks[currentTaskIndex];
             sentenceText.textContent = task.text;
-            progress.textContent = `Задание ${currentTaskIndex + 1} из ${tasks.length}`;
+            progress.textContent = `Task ${currentTaskIndex + 1} of ${tasks.length}`;
 
-            // Не меняем выбранный цвет автоматически — пусть ребёнок сам выбирает!
+            // Показываем задание, скрываем финал
+            taskBlock.style.display = 'block';
+            finalTask.style.display = 'none';
 
             // Озвучиваем новое задание
             setTimeout(() => {
@@ -477,7 +568,7 @@
         }
 
         // ============================================================
-        // 9. FLOOD FILL
+        // 10. FLOOD FILL
         // ============================================================
         function floodFill(startX, startY, fillColor) {
             if (!isReady) return;
@@ -492,9 +583,7 @@
             const targetG = data[idx + 1];
             const targetB = data[idx + 2];
 
-            // Не заливаем чёрные контуры
             if (targetR < 50 && targetG < 50 && targetB < 50) return;
-            // Не заливаем, если уже залито этим цветом
             if (targetR === fillColor.r && targetG === fillColor.g && targetB === fillColor.b) return;
 
             const stack = [
@@ -532,12 +621,16 @@
 
             ctx.putImageData(imageData, 0, 0);
             if (filled > 0) {
-                statusEl.innerHTML = `✅ <span class="ready">Закрашено ${filled} пикселей!</span>`;
+                statusEl.innerHTML = `✅ <span class="ready">Painted ${filled} pixels!</span>`;
+                // Отмечаем текущее задание как выполненное
+                completedTasks[currentTaskIndex] = true;
+                // Проверяем, всё ли готово
+                checkAllCompleted();
             }
         }
 
         // ============================================================
-        // 10. КООРДИНАТЫ
+        // 11. КООРДИНАТЫ
         // ============================================================
         function getCoords(e) {
             const rect = canvas.getBoundingClientRect();
@@ -561,10 +654,11 @@
         }
 
         // ============================================================
-        // 11. ОБРАБОТЧИКИ
+        // 12. ОБРАБОТЧИКИ
         // ============================================================
         function handleClick(e) {
             if (!isReady) return;
+            if (finalTask.style.display === 'block') return; // Не даём рисовать после завершения
             const { x, y } = getCoords(e);
             const hex = selectedColor.hex;
             const r = parseInt(hex.slice(1, 3), 16);
@@ -578,7 +672,10 @@
             const w = canvas.width;
             const h = canvas.height;
             ctx.putImageData(new ImageData(new Uint8ClampedArray(originalData), w, h), 0, 0);
-            statusEl.innerHTML = '🔄 <span class="ready">Сброшено!</span>';
+            completedTasks = new Array(tasks.length).fill(false);
+            currentTaskIndex = 0;
+            updateTask();
+            statusEl.innerHTML = '🔄 <span class="ready">Reset!</span>';
         }
 
         function saveImage() {
@@ -587,23 +684,38 @@
             link.download = 'colouring.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
-            statusEl.innerHTML = '💾 <span class="ready">Сохранено!</span>';
+            statusEl.innerHTML = '💾 <span class="ready">Saved!</span>';
         }
 
         function nextTask() {
-            currentTaskIndex = (currentTaskIndex + 1) % tasks.length;
+            if (currentTaskIndex >= tasks.length - 1) {
+                // Если это последнее задание — отмечаем его выполненным и показываем финал
+                completedTasks[currentTaskIndex] = true;
+                checkAllCompleted();
+                return;
+            }
+            // Отмечаем текущее задание как выполненное
+            completedTasks[currentTaskIndex] = true;
+            currentTaskIndex++;
             updateTask();
-            statusEl.innerHTML = '✅ <span class="ready">Новое задание!</span>';
+            statusEl.innerHTML = '✅ <span class="ready">New task!</span>';
         }
 
         function speakCurrent() {
             const task = tasks[currentTaskIndex];
-            speakText(task.text);
-            statusEl.innerHTML = '🔊 <span class="ready">Озвучиваю...</span>';
+            if (task) {
+                speakText(task.text);
+                statusEl.innerHTML = '🔊 <span class="ready">Speaking...</span>';
+            }
+        }
+
+        function speakFinalDescription() {
+            speakText(descriptionText.textContent);
+            statusEl.innerHTML = '🔊 <span class="ready">Speaking description...</span>';
         }
 
         // ============================================================
-        // 12. СОБЫТИЯ
+        // 13. СОБЫТИЯ
         // ============================================================
         canvas.addEventListener('click', handleClick);
         canvas.addEventListener('touchstart', function(e) {
@@ -616,11 +728,11 @@
         nextBtn.addEventListener('click', nextTask);
         speakBtn.addEventListener('click', speakCurrent);
         speakBtn2.addEventListener('click', speakCurrent);
+        speakFinalBtn.addEventListener('click', speakFinalDescription);
 
         // ============================================================
-        // 13. ЗАПУСК
+        // 14. ЗАПУСК
         // ============================================================
-        // Загружаем голоса для озвучки
         if (window.speechSynthesis) {
             window.speechSynthesis.getVoices();
             window.speechSynthesis.onvoiceschanged = function() {
