@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🎨 Colour & Learn — Describe!</title>
+    <title>🎨 Волшебная раскраска</title>
     <style>
         * {
             margin: 0;
@@ -11,21 +11,23 @@
             box-sizing: border-box;
         }
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 16px;
             font-family: 'Segoe UI', Arial, sans-serif;
+            cursor: none;
         }
         .container {
             background: white;
             padding: 20px;
             border-radius: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             max-width: 700px;
             width: 100%;
+            position: relative;
         }
         .header {
             text-align: center;
@@ -42,6 +44,8 @@
             color: #636e72;
             font-size: 14px;
         }
+
+        /* Задание */
         .task {
             background: #f8f9fa;
             padding: 14px 18px;
@@ -78,7 +82,7 @@
             transform: scale(1.2);
         }
 
-        /* ===== ФИНАЛЬНОЕ ЗАДАНИЕ ===== */
+        /* Финальное задание */
         .final-task {
             display: none;
             background: #e8f8f5;
@@ -116,14 +120,14 @@
             width: 100%;
             height: auto;
             border-radius: 16px;
-            cursor: pointer;
+            cursor: none;
             background: #f0f0f0;
             border: 3px solid #dfe6e9;
             touch-action: none;
             min-height: 220px;
         }
 
-        /* ===== ПАЛИТРА ===== */
+        /* Палитра */
         .palette {
             display: flex;
             flex-wrap: wrap;
@@ -153,7 +157,6 @@
             box-shadow: 0 0 0 3px #fff, 0 0 0 6px #2d3436;
         }
 
-        /* ===== ИНСТРУМЕНТЫ ===== */
         .tools {
             display: flex;
             gap: 10px;
@@ -226,27 +229,57 @@
         .selected-color-info span {
             font-weight: bold;
         }
-        .hidden {
+
+        /* ===== КАСТОМНЫЙ КУРСОР-КИСТОЧКА ===== */
+        #customCursor {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            font-size: 36px;
+            transform: translate(-8px, -8px) rotate(-20deg);
+            transition: transform 0.05s;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
             display: none;
         }
-        .completed-badge {
-            display: inline-block;
-            background: #00b894;
-            color: white;
-            padding: 4px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            margin-top: 4px;
+        @media (hover: none) {
+            #customCursor {
+                display: none !important;
+            }
+            canvas {
+                cursor: pointer;
+            }
+        }
+
+        /* ===== ИСКРЫ (звёздочки) ===== */
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            font-size: 24px;
+            z-index: 9998;
+            animation: sparkleAnim 0.8s ease-out forwards;
+        }
+        @keyframes sparkleAnim {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) scale(1) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty)) scale(0) rotate(360deg);
+            }
         }
     </style>
 </head>
 <body>
 
+    <!-- ===== КАСТОМНЫЙ КУРСОР ===== -->
+    <div id="customCursor">🖌️</div>
+
     <div class="container">
         <!-- ===== ЗАГОЛОВОК ===== -->
         <div class="header">
             <h1>🎨 <span>Colour</span> & <span>Learn</span></h1>
-            <div class="subtitle">Listen, choose a colour, and paint!</div>
+            <div class="subtitle">✨ Magic Brush! Listen, choose, paint!</div>
         </div>
 
         <!-- ===== ЗАДАНИЕ ===== -->
@@ -276,7 +309,7 @@
         <!-- ===== ПАЛИТРА ===== -->
         <div class="palette" id="palette"></div>
 
-        <!-- ===== ИНФО О ВЫБРАННОМ ЦВЕТЕ ===== -->
+        <!-- ===== ИНФО ===== -->
         <div class="selected-color-info" id="selectedColorInfo">
             🖌️ Selected: <span id="selectedColorName" style="color:#ff6b6b;">Red</span>
         </div>
@@ -296,7 +329,7 @@
         <div class="progress" id="progress">Task 1 of 7</div>
 
         <!-- ===== ФУТЕР ===== -->
-        <div class="footer">✨ Click on white areas to colour them!</div>
+        <div class="footer">✨ Tap with the magic brush!</div>
     </div>
 
     <script>
@@ -354,9 +387,91 @@
         const taskBlock = document.getElementById('taskBlock');
         const finalTask = document.getElementById('finalTask');
         const descriptionText = document.getElementById('descriptionText');
+        const customCursor = document.getElementById('customCursor');
 
         // ============================================================
-        // 4. ОЗВУЧКА
+        // 4. КАСТОМНЫЙ КУРСОР
+        // ============================================================
+        document.addEventListener('mousemove', function(e) {
+            customCursor.style.display = 'block';
+            customCursor.style.left = e.clientX + 'px';
+            customCursor.style.top = e.clientY + 'px';
+        });
+
+        document.addEventListener('mouseleave', function() {
+            customCursor.style.display = 'none';
+        });
+
+        // ============================================================
+        // 5. ЗВУК (синтезированный "цинь")
+        // ============================================================
+        function playMagicSound() {
+            try {
+                const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.15);
+
+                // Добавляем второй тон для эффекта "цинь"
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.frequency.setValueAtTime(1800, audioCtx.currentTime + 0.05);
+                osc2.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.15);
+                gain2.gain.setValueAtTime(0.15, audioCtx.currentTime + 0.05);
+                gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc2.start(audioCtx.currentTime + 0.05);
+                osc2.stop(audioCtx.currentTime + 0.2);
+            } catch (e) {
+                // Звук не поддерживается — тихо пропускаем
+            }
+        }
+
+        // ============================================================
+        // 6. ИСКРЫ (звёздочки)
+        // ============================================================
+        function createSparkles(x, y) {
+            const emojis = ['✨', '⭐', '🌟', '💫', '✧', '✦'];
+            const colors = ['#ff6b6b', '#fdcb6e', '#00b894', '#0984e3', '#fd79a8', '#6c5ce7', '#ff9f43'];
+            const count = 8 + Math.floor(Math.random() * 8);
+
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.className = 'sparkle';
+                el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                el.style.color = colors[Math.floor(Math.random() * colors.length)];
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                el.style.fontSize = (16 + Math.random() * 24) + 'px';
+
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 60 + Math.random() * 100;
+                el.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                el.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+
+                el.style.animationDuration = (0.5 + Math.random() * 0.5) + 's';
+                document.body.appendChild(el);
+
+                setTimeout(() => {
+                    el.remove();
+                }, 1000);
+            }
+        }
+
+        // ============================================================
+        // 7. ОЗВУЧКА
         // ============================================================
         function speakText(text) {
             if (!window.speechSynthesis) {
@@ -379,7 +494,7 @@
         }
 
         // ============================================================
-        // 5. ЗАГРУЗКА КАРТИНКИ
+        // 8. ЗАГРУЗКА КАРТИНКИ
         // ============================================================
         function loadImage() {
             const img = new Image();
@@ -414,7 +529,7 @@
         }
 
         // ============================================================
-        // 6. ТЕСТОВАЯ КАРТИНКА
+        // 9. ТЕСТОВАЯ КАРТИНКА
         // ============================================================
         function drawTestImage() {
             const w = 500,
@@ -482,7 +597,7 @@
         }
 
         // ============================================================
-        // 7. ПАЛИТРА
+        // 10. ПАЛИТРА
         // ============================================================
         function buildPalette() {
             paletteEl.innerHTML = '';
@@ -521,12 +636,9 @@
         }
 
         // ============================================================
-        // 8. ПРОВЕРКА ВСЕХ ЗАДАНИЙ
+        // 11. ПРОВЕРКА ВСЕХ ЗАДАНИЙ
         // ============================================================
         function checkAllCompleted() {
-            // Проверяем, все ли задания выполнены (все области закрашены)
-            // Для простоты считаем, что если пользователь прошёл все задания, то всё готово
-            // Но мы будем считать, что задание выполнено, если на него нажали "Next"
             const allDone = completedTasks.every(v => v === true);
             if (allDone && currentTaskIndex === tasks.length - 1) {
                 showFinalTask();
@@ -538,14 +650,13 @@
             finalTask.style.display = 'block';
             statusEl.innerHTML = '🎉 <span class="ready">All tasks completed! Great job!</span>';
             progress.textContent = '🎯 All done!';
-            // Озвучиваем финальное описание
             setTimeout(() => {
                 speakText(descriptionText.textContent);
             }, 500);
         }
 
         // ============================================================
-        // 9. ОБНОВЛЕНИЕ ЗАДАНИЯ
+        // 12. ОБНОВЛЕНИЕ ЗАДАНИЯ
         // ============================================================
         function updateTask() {
             if (currentTaskIndex >= tasks.length) {
@@ -557,18 +668,16 @@
             sentenceText.textContent = task.text;
             progress.textContent = `Task ${currentTaskIndex + 1} of ${tasks.length}`;
 
-            // Показываем задание, скрываем финал
             taskBlock.style.display = 'block';
             finalTask.style.display = 'none';
 
-            // Озвучиваем новое задание
             setTimeout(() => {
                 speakText(task.text);
             }, 400);
         }
 
         // ============================================================
-        // 10. FLOOD FILL
+        // 13. FLOOD FILL
         // ============================================================
         function floodFill(startX, startY, fillColor) {
             if (!isReady) return;
@@ -620,17 +729,25 @@
             }
 
             ctx.putImageData(imageData, 0, 0);
+
             if (filled > 0) {
-                statusEl.innerHTML = `✅ <span class="ready">Painted ${filled} pixels!</span>`;
-                // Отмечаем текущее задание как выполненное
+                // Волшебство!
+                playMagicSound();
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const cx = rect.left + startX / scaleX;
+                const cy = rect.top + startY / scaleY;
+                createSparkles(cx, cy);
+
+                statusEl.innerHTML = `✨ <span class="ready">Magic! Painted ${filled} pixels!</span>`;
                 completedTasks[currentTaskIndex] = true;
-                // Проверяем, всё ли готово
                 checkAllCompleted();
             }
         }
 
         // ============================================================
-        // 11. КООРДИНАТЫ
+        // 14. КООРДИНАТЫ
         // ============================================================
         function getCoords(e) {
             const rect = canvas.getBoundingClientRect();
@@ -654,11 +771,11 @@
         }
 
         // ============================================================
-        // 12. ОБРАБОТЧИКИ
+        // 15. ОБРАБОТЧИКИ
         // ============================================================
         function handleClick(e) {
             if (!isReady) return;
-            if (finalTask.style.display === 'block') return; // Не даём рисовать после завершения
+            if (finalTask.style.display === 'block') return;
             const { x, y } = getCoords(e);
             const hex = selectedColor.hex;
             const r = parseInt(hex.slice(1, 3), 16);
@@ -689,12 +806,10 @@
 
         function nextTask() {
             if (currentTaskIndex >= tasks.length - 1) {
-                // Если это последнее задание — отмечаем его выполненным и показываем финал
                 completedTasks[currentTaskIndex] = true;
                 checkAllCompleted();
                 return;
             }
-            // Отмечаем текущее задание как выполненное
             completedTasks[currentTaskIndex] = true;
             currentTaskIndex++;
             updateTask();
@@ -715,7 +830,7 @@
         }
 
         // ============================================================
-        // 13. СОБЫТИЯ
+        // 16. СОБЫТИЯ
         // ============================================================
         canvas.addEventListener('click', handleClick);
         canvas.addEventListener('touchstart', function(e) {
@@ -731,7 +846,7 @@
         speakFinalBtn.addEventListener('click', speakFinalDescription);
 
         // ============================================================
-        // 14. ЗАПУСК
+        // 17. ЗАПУСК
         // ============================================================
         if (window.speechSynthesis) {
             window.speechSynthesis.getVoices();
