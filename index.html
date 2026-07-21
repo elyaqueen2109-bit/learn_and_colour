@@ -9,6 +9,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            user-select: none;
         }
         body {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -60,9 +61,6 @@
             font-size: 20px;
             font-weight: bold;
             color: #2d3436;
-        }
-        .task .question .highlight {
-            color: #e94560;
         }
         .task .hint-text {
             color: #636e72;
@@ -125,6 +123,7 @@
             border: 3px solid #dfe6e9;
             touch-action: none;
             min-height: 220px;
+            position: relative;
         }
 
         /* Палитра */
@@ -138,6 +137,7 @@
             background: #f8f9fa;
             border-radius: 20px;
             border: 2px solid #dfe6e9;
+            cursor: pointer;
         }
         .color-btn {
             width: 48px;
@@ -147,6 +147,7 @@
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
         .color-btn:hover {
             transform: scale(1.1);
@@ -193,6 +194,9 @@
             background: #fdcb6e;
             color: #2d3436;
         }
+        .tools button.undo {
+            background: #6c5ce7;
+        }
 
         .status {
             text-align: center;
@@ -230,13 +234,13 @@
             font-weight: bold;
         }
 
-        /* ===== КАСТОМНЫЙ КУРСОР-КИСТОЧКА ===== */
+        /* ===== КАСТОМНЫЙ КУРСОР ===== */
         #customCursor {
             position: fixed;
             pointer-events: none;
             z-index: 9999;
             font-size: 36px;
-            transform: translate(-8px, -8px) rotate(-20deg);
+            transform: translate(-8px, -8px);
             transition: transform 0.05s;
             filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
             display: none;
@@ -248,9 +252,12 @@
             canvas {
                 cursor: pointer;
             }
+            .palette {
+                cursor: pointer;
+            }
         }
 
-        /* ===== ИСКРЫ (звёздочки) ===== */
+        /* ===== ИСКРЫ ===== */
         .sparkle {
             position: fixed;
             pointer-events: none;
@@ -266,6 +273,23 @@
             100% {
                 opacity: 0;
                 transform: translate(var(--tx), var(--ty)) scale(0) rotate(360deg);
+            }
+        }
+
+        /* ===== ПОДСКАЗКА ДЛЯ ТЕЛЕФОНА ===== */
+        .mobile-hint {
+            display: none;
+            text-align: center;
+            color: #636e72;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        @media (hover: none) {
+            .mobile-hint {
+                display: block;
+            }
+            #customCursor {
+                display: none !important;
             }
         }
     </style>
@@ -316,6 +340,7 @@
 
         <!-- ===== ИНСТРУМЕНТЫ ===== -->
         <div class="tools">
+            <button class="undo" id="undoBtn">↩️ Undo</button>
             <button class="reset" id="resetBtn">🔄 Reset</button>
             <button class="save" id="saveBtn">💾 Save</button>
             <button class="next" id="nextBtn">➡️ Next</button>
@@ -330,6 +355,7 @@
 
         <!-- ===== ФУТЕР ===== -->
         <div class="footer">✨ Tap with the magic brush!</div>
+        <div class="mobile-hint">👆 Tap on the picture to paint</div>
     </div>
 
     <script>
@@ -368,6 +394,10 @@
         let selectedColor = paletteColors[0];
         let completedTasks = new Array(tasks.length).fill(false);
 
+        // ===== UNDO =====
+        let history = [];
+        const MAX_HISTORY = 30;
+
         // ============================================================
         // 3. ЭЛЕМЕНТЫ
         // ============================================================
@@ -377,6 +407,7 @@
         const resetBtn = document.getElementById('resetBtn');
         const saveBtn = document.getElementById('saveBtn');
         const nextBtn = document.getElementById('nextBtn');
+        const undoBtn = document.getElementById('undoBtn');
         const speakBtn = document.getElementById('speakBtn');
         const speakBtn2 = document.getElementById('speakBtn2');
         const speakFinalBtn = document.getElementById('speakFinalBtn');
@@ -402,8 +433,23 @@
             customCursor.style.display = 'none';
         });
 
+        // Меняем курсор в зависимости от зоны
+        document.addEventListener('mouseover', function(e) {
+            const target = e.target;
+            if (target.closest('.palette') || target.closest('.tools') || target.closest('.task')) {
+                customCursor.textContent = '👆';
+                customCursor.style.transform = 'translate(-8px, -8px) scale(0.8)';
+            } else if (target.closest('canvas')) {
+                customCursor.textContent = '🖌️';
+                customCursor.style.transform = 'translate(-8px, -8px) rotate(-20deg)';
+            } else {
+                customCursor.textContent = '🖌️';
+                customCursor.style.transform = 'translate(-8px, -8px) rotate(-20deg)';
+            }
+        });
+
         // ============================================================
-        // 5. ЗВУК (синтезированный "цинь")
+        // 5. ЗВУК
         // ============================================================
         function playMagicSound() {
             try {
@@ -423,7 +469,6 @@
                 oscillator.start(audioCtx.currentTime);
                 oscillator.stop(audioCtx.currentTime + 0.15);
 
-                // Добавляем второй тон для эффекта "цинь"
                 const osc2 = audioCtx.createOscillator();
                 const gain2 = audioCtx.createGain();
                 osc2.connect(gain2);
@@ -434,13 +479,11 @@
                 gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
                 osc2.start(audioCtx.currentTime + 0.05);
                 osc2.stop(audioCtx.currentTime + 0.2);
-            } catch (e) {
-                // Звук не поддерживается — тихо пропускаем
-            }
+            } catch (e) {}
         }
 
         // ============================================================
-        // 6. ИСКРЫ (звёздочки)
+        // 6. ИСКРЫ
         // ============================================================
         function createSparkles(x, y) {
             const emojis = ['✨', '⭐', '🌟', '💫', '✧', '✦'];
@@ -518,6 +561,8 @@
                 originalData = new Uint8ClampedArray(imageData.data);
                 isReady = true;
 
+                // Очищаем историю
+                history = [];
                 statusEl.innerHTML = '✅ <span class="ready">Ready! Choose a colour and paint!</span>';
                 updateTask();
             };
@@ -636,7 +681,30 @@
         }
 
         // ============================================================
-        // 11. ПРОВЕРКА ВСЕХ ЗАДАНИЙ
+        // 11. UNDO
+        // ============================================================
+        function saveState() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            history.push(new Uint8ClampedArray(imageData.data));
+            if (history.length > MAX_HISTORY) {
+                history.shift();
+            }
+        }
+
+        function undo() {
+            if (history.length === 0) {
+                statusEl.innerHTML = '⚠️ <span style="color:#fdcb6e;">Nothing to undo!</span>';
+                return;
+            }
+            const prevState = history.pop();
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.putImageData(new ImageData(prevState, w, h), 0, 0);
+            statusEl.innerHTML = '↩️ <span class="ready">Undo!</span>';
+        }
+
+        // ============================================================
+        // 12. ПРОВЕРКА ВСЕХ ЗАДАНИЙ
         // ============================================================
         function checkAllCompleted() {
             const allDone = completedTasks.every(v => v === true);
@@ -656,7 +724,7 @@
         }
 
         // ============================================================
-        // 12. ОБНОВЛЕНИЕ ЗАДАНИЯ
+        // 13. ОБНОВЛЕНИЕ ЗАДАНИЯ
         // ============================================================
         function updateTask() {
             if (currentTaskIndex >= tasks.length) {
@@ -677,7 +745,7 @@
         }
 
         // ============================================================
-        // 13. FLOOD FILL
+        // 14. FLOOD FILL (улучшенный — больше зона захвата)
         // ============================================================
         function floodFill(startX, startY, fillColor) {
             if (!isReady) return;
@@ -687,7 +755,32 @@
             const imageData = ctx.getImageData(0, 0, w, h);
             const data = imageData.data;
 
-            const idx = (startY * w + startX) * 4;
+            // Ищем ближайший не-чёрный пиксель в радиусе 10px (чтобы легче попадать)
+            let targetX = startX;
+            let targetY = startY;
+            let found = false;
+            const radius = 10;
+
+            for (let dy = -radius; dy <= radius && !found; dy++) {
+                for (let dx = -radius; dx <= radius && !found; dx++) {
+                    const cx = startX + dx;
+                    const cy = startY + dy;
+                    if (cx < 0 || cx >= w || cy < 0 || cy >= h) continue;
+                    const idx = (cy * w + cx) * 4;
+                    if (data[idx] > 50 || data[idx + 1] > 50 || data[idx + 2] > 50) {
+                        targetX = cx;
+                        targetY = cy;
+                        found = true;
+                    }
+                }
+            }
+
+            if (!found) {
+                statusEl.innerHTML = '⚠️ <span style="color:#fdcb6e;">No paintable area found!</span>';
+                return;
+            }
+
+            const idx = (targetY * w + targetX) * 4;
             const targetR = data[idx];
             const targetG = data[idx + 1];
             const targetB = data[idx + 2];
@@ -695,8 +788,11 @@
             if (targetR < 50 && targetG < 50 && targetB < 50) return;
             if (targetR === fillColor.r && targetG === fillColor.g && targetB === fillColor.b) return;
 
+            // Сохраняем состояние для undo
+            saveState();
+
             const stack = [
-                [startX, startY]
+                [targetX, targetY]
             ];
             const visited = new Uint8Array(w * h);
             let filled = 0;
@@ -731,13 +827,12 @@
             ctx.putImageData(imageData, 0, 0);
 
             if (filled > 0) {
-                // Волшебство!
                 playMagicSound();
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
-                const cx = rect.left + startX / scaleX;
-                const cy = rect.top + startY / scaleY;
+                const cx = rect.left + targetX / scaleX;
+                const cy = rect.top + targetY / scaleY;
                 createSparkles(cx, cy);
 
                 statusEl.innerHTML = `✨ <span class="ready">Magic! Painted ${filled} pixels!</span>`;
@@ -747,7 +842,7 @@
         }
 
         // ============================================================
-        // 14. КООРДИНАТЫ
+        // 15. КООРДИНАТЫ
         // ============================================================
         function getCoords(e) {
             const rect = canvas.getBoundingClientRect();
@@ -771,7 +866,7 @@
         }
 
         // ============================================================
-        // 15. ОБРАБОТЧИКИ
+        // 16. ОБРАБОТЧИКИ
         // ============================================================
         function handleClick(e) {
             if (!isReady) return;
@@ -789,6 +884,7 @@
             const w = canvas.width;
             const h = canvas.height;
             ctx.putImageData(new ImageData(new Uint8ClampedArray(originalData), w, h), 0, 0);
+            history = [];
             completedTasks = new Array(tasks.length).fill(false);
             currentTaskIndex = 0;
             updateTask();
@@ -830,7 +926,7 @@
         }
 
         // ============================================================
-        // 16. СОБЫТИЯ
+        // 17. СОБЫТИЯ
         // ============================================================
         canvas.addEventListener('click', handleClick);
         canvas.addEventListener('touchstart', function(e) {
@@ -841,12 +937,13 @@
         resetBtn.addEventListener('click', resetImage);
         saveBtn.addEventListener('click', saveImage);
         nextBtn.addEventListener('click', nextTask);
+        undoBtn.addEventListener('click', undo);
         speakBtn.addEventListener('click', speakCurrent);
         speakBtn2.addEventListener('click', speakCurrent);
         speakFinalBtn.addEventListener('click', speakFinalDescription);
 
         // ============================================================
-        // 17. ЗАПУСК
+        // 18. ЗАПУСК
         // ============================================================
         if (window.speechSynthesis) {
             window.speechSynthesis.getVoices();
