@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>🎨 Раскраска Travel</title>
+    <title>🎨 Colour & Learn — Travel Girl</title>
     <style>
         * {
             margin: 0;
@@ -11,20 +11,69 @@
             box-sizing: border-box;
         }
         body {
-            background: #1a1a2e;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 16px;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
         }
         .container {
-            background: #16213e;
-            padding: 20px;
-            border-radius: 24px;
+            background: white;
+            padding: 24px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             max-width: 700px;
             width: 100%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #2d3436;
+        }
+        .header h1 span {
+            color: #e94560;
+        }
+        .header .subtitle {
+            color: #636e72;
+            font-size: 14px;
+        }
+        .task {
+            background: #f8f9fa;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border-left: 5px solid #e94560;
+            text-align: center;
+        }
+        .task .question {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2d3436;
+        }
+        .task .question .highlight {
+            color: #e94560;
+        }
+        .task .hint-text {
+            color: #636e72;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .task .speaker-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            margin-left: 10px;
+            vertical-align: middle;
+            transition: 0.2s;
+        }
+        .task .speaker-btn:hover {
+            transform: scale(1.2);
         }
         canvas {
             display: block;
@@ -33,9 +82,9 @@
             border-radius: 16px;
             cursor: pointer;
             background: #f0f0f0;
-            border: 2px solid #0f3460;
+            border: 3px solid #dfe6e9;
             touch-action: none;
-            min-height: 300px;
+            min-height: 250px;
         }
         .tools {
             display: flex;
@@ -46,17 +95,18 @@
             align-items: center;
         }
         .tools input[type="color"] {
-            width: 50px;
-            height: 50px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             cursor: pointer;
-            border: 3px solid white;
+            border: 3px solid #dfe6e9;
+            padding: 0;
         }
         .tools button {
-            padding: 10px 24px;
+            padding: 10px 22px;
             border: none;
             border-radius: 30px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             color: white;
             cursor: pointer;
@@ -71,85 +121,153 @@
         .tools button.save {
             background: #e94560;
         }
-        #log {
-            color: #0f0;
-            background: #000;
-            padding: 10px;
-            border-radius: 10px;
-            margin-top: 12px;
-            font-size: 13px;
-            font-family: monospace;
-            max-height: 100px;
-            overflow-y: auto;
-            word-break: break-all;
+        .tools button.next {
+            background: #0984e3;
+        }
+        .tools button.speak {
+            background: #fdcb6e;
+            color: #2d3436;
         }
         .status {
-            color: #fff;
             text-align: center;
-            margin-top: 8px;
-            font-size: 14px;
+            margin-top: 12px;
+            font-size: 15px;
+            color: #2d3436;
+            font-weight: bold;
         }
         .status .ready {
-            color: #00ff88;
-        }
-        .status .notready {
-            color: #ff6b6b;
+            color: #00b894;
         }
         .status .loading {
             color: #fdcb6e;
         }
-        .hint {
-            color: #aaa;
+        .progress {
             text-align: center;
+            font-size: 14px;
+            color: #636e72;
+            margin-top: 8px;
+        }
+        .footer {
+            text-align: center;
+            color: #b2bec3;
+            font-size: 12px;
             margin-top: 12px;
-            font-size: 13px;
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
+
     <div class="container">
+        <!-- ===== ЗАГОЛОВОК ===== -->
+        <div class="header">
+            <h1>🎨 <span>Colour</span> & <span>Learn</span></h1>
+            <div class="subtitle">Listen & Colour!</div>
+        </div>
+
+        <!-- ===== ЗАДАНИЕ ===== -->
+        <div class="task" id="taskBlock">
+            <div class="question" id="taskText">
+                🎯 <span id="sentenceText">Colour the girl's hat red</span>
+                <button class="speaker-btn" id="speakBtn">🔊</button>
+            </div>
+            <div class="hint-text">👆 Tap on the picture to colour it!</div>
+        </div>
+
+        <!-- ===== КАНВАС ===== -->
         <canvas id="canvas" width="500" height="500"></canvas>
+
+        <!-- ===== ИНСТРУМЕНТЫ ===== -->
         <div class="tools">
             <input type="color" id="colorPicker" value="#ff6b6b">
             <button class="reset" id="resetBtn">🔄 Сброс</button>
             <button class="save" id="saveBtn">💾 Сохранить</button>
+            <button class="next" id="nextBtn">➡️ Следующее</button>
+            <button class="speak" id="speakBtn2">🔊 Озвучить</button>
         </div>
-        <div id="log">▶ Загрузка...</div>
-        <div class="status" id="status">⏳ Статус: <span class="loading">ЗАГРУЗКА...</span></div>
-        <div class="hint" id="hint">👆 Кликни по области, чтобы закрасить</div>
+
+        <!-- ===== СТАТУС ===== -->
+        <div class="status" id="status">⏳ <span class="loading">Загрузка...</span></div>
+
+        <!-- ===== ПРОГРЕСС ===== -->
+        <div class="progress" id="progress">Задание 1 из 7</div>
+
+        <!-- ===== ФУТЕР ===== -->
+        <div class="footer">✨ Click on white areas to colour them!</div>
     </div>
 
     <script>
+        // ============================================================
+        // 1. ЗАДАНИЯ (ТВОИ)
+        // ============================================================
+        const tasks = [
+            { text: "Colour the trousers green", color: '#00b894' },
+            { text: "Colour the scarf yellow", color: '#fdcb6e' },
+            { text: "Colour the jacket blue", color: '#0984e3' },
+            { text: "Colour the boots pink", color: '#fd79a8' },
+            { text: "Colour the cap pink", color: '#fd79a8' },
+            { text: "Colour the backpack purple", color: '#6c5ce7' },
+            { text: "Colour the hair brown", color: '#8B4513' },
+        ];
+
+        let currentTaskIndex = 0;
+        let isReady = false;
+        let originalData = null;
+
+        // ============================================================
+        // 2. ЭЛЕМЕНТЫ
+        // ============================================================
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const colorPicker = document.getElementById('colorPicker');
         const resetBtn = document.getElementById('resetBtn');
         const saveBtn = document.getElementById('saveBtn');
-        const log = document.getElementById('log');
+        const nextBtn = document.getElementById('nextBtn');
+        const speakBtn = document.getElementById('speakBtn');
+        const speakBtn2 = document.getElementById('speakBtn2');
         const statusEl = document.getElementById('status');
-        const hint = document.getElementById('hint');
+        const sentenceText = document.getElementById('sentenceText');
+        const progress = document.getElementById('progress');
 
-        let originalData = null;
-        let isReady = false;
+        // ============================================================
+        // 3. ОЗВУЧКА
+        // ============================================================
+        function speakText(text) {
+            if (!window.speechSynthesis) {
+                statusEl.innerHTML = '⚠️ <span style="color:#e94560;">Озвучка не поддерживается</span>';
+                return;
+            }
+            window.speechSynthesis.cancel();
 
-        function logMessage(msg) {
-            log.innerHTML += '\n' + msg;
-            log.scrollTop = log.scrollHeight;
-            console.log(msg);
-        }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85;
+            utterance.pitch = 1.1;
+            utterance.volume = 1;
 
-        function updateStatus(type) {
-            const types = {
-                ready: '<span class="ready">✅ ГОТОВО!</span>',
-                loading: '<span class="loading">⏳ ЗАГРУЗКА...</span>',
-                error: '<span class="notready">❌ НЕТ КАРТИНКИ</span>'
+            // Пробуем найти женский голос
+            const voices = window.speechSynthesis.getVoices();
+            const femaleVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Female'));
+            if (femaleVoice) utterance.voice = femaleVoice;
+
+            utterance.onerror = function() {
+                statusEl.innerHTML = '⚠️ <span style="color:#e94560;">Ошибка озвучки</span>';
             };
-            statusEl.innerHTML = `📌 Статус: ${types[type] || types.loading}`;
+
+            window.speechSynthesis.speak(utterance);
         }
 
-        // ========== ОБРАБОТКА КАРТИНКИ ==========
-        function processImage(img) {
-            try {
+        // ============================================================
+        // 4. ЗАГРУЗКА КАРТИНКИ
+        // ============================================================
+        function loadImage() {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = 'travel.jpg?' + Date.now();
+
+            img.onload = function() {
                 let w = img.width;
                 let h = img.height;
                 const maxSize = 500;
@@ -160,78 +278,119 @@
                 }
                 canvas.width = w;
                 canvas.height = h;
-                logMessage('📐 Размер: ' + w + 'x' + h);
 
                 ctx.drawImage(img, 0, 0, w, h);
-                logMessage('🖼️ Картинка нарисована');
-
                 const imageData = ctx.getImageData(0, 0, w, h);
                 originalData = new Uint8ClampedArray(imageData.data);
                 isReady = true;
-                updateStatus('ready');
-                hint.textContent = '👆 Кликни по области, чтобы закрасить!';
-                logMessage('✅ ГОТОВО! Можно раскрашивать.');
-            } catch (e) {
-                logMessage('❌ Ошибка: ' + e.message);
-                updateStatus('error');
-            }
-        }
 
-        // ========== АВТОЗАГРУЗКА ==========
-        function autoLoad() {
-            logMessage('🔄 Загружаю travel.jpg...');
-            updateStatus('loading');
-
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-
-            img.onload = function() {
-                logMessage('✅ Картинка загружена: ' + img.width + 'x' + img.height);
-                processImage(img);
+                statusEl.innerHTML = '✅ <span class="ready">Готово! Раскрашивай!</span>';
+                updateTask();
             };
 
             img.onerror = function() {
-                logMessage('❌ Ошибка! travel.jpg не найден.');
-                logMessage('💡 Проверь, что файл лежит рядом с index.html');
-                logMessage('💡 Или загрузи на GitHub и открой через Pages');
-                updateStatus('error');
-                hint.textContent = '❌ Файл travel.jpg не найден! Положи его рядом.';
-            };
-
-            // ===== НАСТРОЙ ПУТЬ К КАРТИНКЕ =====
-            // На GitHub: просто "travel.jpg" (рядом с index.html)
-            // На компьютере: тоже "travel.jpg" (в той же папке)
-            img.src = 'travel.jpg?' + Date.now();
-        }
-
-        // ========== КООРДИНАТЫ ==========
-        function getCoords(e) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            let clientX, clientY;
-
-            if (e.touches) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-                e.preventDefault();
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-
-            return {
-                x: Math.round((clientX - rect.left) * scaleX),
-                y: Math.round((clientY - rect.top) * scaleY)
+                statusEl.innerHTML = '❌ <span style="color:#e94560;">Файл travel.jpg не найден!</span>';
+                drawTestImage();
             };
         }
 
-        // ========== FLOOD FILL ==========
+        // ============================================================
+        // 5. ТЕСТОВАЯ КАРТИНКА
+        // ============================================================
+        function drawTestImage() {
+            const w = 500,
+                h = 500;
+            canvas.width = w;
+            canvas.height = h;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Голова
+            ctx.beginPath();
+            ctx.arc(250, 180, 80, 0, Math.PI * 2);
+            ctx.stroke();
+            // Кепка
+            ctx.beginPath();
+            ctx.ellipse(250, 120, 100, 30, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(320, 120, 25, 40, 0.3, 0, Math.PI * 2);
+            ctx.stroke();
+            // Волосы
+            ctx.beginPath();
+            ctx.arc(215, 175, 12, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(285, 175, 12, 0, Math.PI * 2);
+            ctx.stroke();
+            // Улыбка
+            ctx.beginPath();
+            ctx.arc(250, 210, 22, 0.1, Math.PI - 0.1);
+            ctx.stroke();
+            // Тело (куртка)
+            ctx.beginPath();
+            ctx.moveTo(180, 270);
+            ctx.lineTo(320, 270);
+            ctx.lineTo(350, 420);
+            ctx.lineTo(150, 420);
+            ctx.closePath();
+            ctx.stroke();
+            // Шарф
+            ctx.beginPath();
+            ctx.moveTo(190, 260);
+            ctx.lineTo(310, 260);
+            ctx.stroke();
+            // Брюки
+            ctx.beginPath();
+            ctx.moveTo(180, 420);
+            ctx.lineTo(160, 500);
+            ctx.moveTo(320, 420);
+            ctx.lineTo(340, 500);
+            ctx.stroke();
+            // Ботинки
+            ctx.beginPath();
+            ctx.ellipse(160, 510, 25, 12, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(340, 510, 25, 12, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            // Рюкзак
+            ctx.beginPath();
+            ctx.rect(340, 290, 40, 70);
+            ctx.stroke();
+
+            const imageData = ctx.getImageData(0, 0, w, h);
+            originalData = new Uint8ClampedArray(imageData.data);
+            isReady = true;
+            statusEl.innerHTML = '✅ <span class="ready">Тестовая раскраска</span>';
+            updateTask();
+        }
+
+        // ============================================================
+        // 6. ОБНОВЛЕНИЕ ЗАДАНИЯ
+        // ============================================================
+        function updateTask() {
+            const task = tasks[currentTaskIndex];
+            sentenceText.textContent = task.text;
+            colorPicker.value = task.color;
+            progress.textContent = `Задание ${currentTaskIndex + 1} из ${tasks.length}`;
+
+            // Автоматически озвучиваем новое задание
+            setTimeout(() => {
+                speakText(task.text);
+            }, 300);
+        }
+
+        // ============================================================
+        // 7. FLOOD FILL
+        // ============================================================
         function floodFill(startX, startY, fillColor) {
-            if (!isReady) {
-                logMessage('⚠️ Сначала загрузи картинку!');
-                return;
-            }
+            if (!isReady) return;
 
             const w = canvas.width;
             const h = canvas.height;
@@ -243,17 +402,8 @@
             const targetG = data[idx + 1];
             const targetB = data[idx + 2];
 
-            logMessage(`🎯 Клик: (${startX}, ${startY}) | RGB: (${targetR},${targetG},${targetB})`);
-
-            if (targetR < 50 && targetG < 50 && targetB < 50) {
-                logMessage('⛔ Это ЧЁРНЫЙ контур!');
-                return;
-            }
-
-            if (targetR === fillColor.r && targetG === fillColor.g && targetB === fillColor.b) {
-                logMessage('⏭️ Уже залито');
-                return;
-            }
+            if (targetR < 50 && targetG < 50 && targetB < 50) return;
+            if (targetR === fillColor.r && targetG === fillColor.g && targetB === fillColor.b) return;
 
             const stack = [
                 [startX, startY]
@@ -289,11 +439,40 @@
             }
 
             ctx.putImageData(imageData, 0, 0);
-            logMessage(`✅ Залито ${filled} пикселей!`);
+            if (filled > 0) {
+                statusEl.innerHTML = `✅ <span class="ready">Закрашено ${filled} пикселей!</span>`;
+            }
         }
 
-        // ========== ОБРАБОТЧИКИ ==========
+        // ============================================================
+        // 8. КООРДИНАТЫ
+        // ============================================================
+        function getCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX, clientY;
+
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+                e.preventDefault();
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            return {
+                x: Math.round((clientX - rect.left) * scaleX),
+                y: Math.round((clientY - rect.top) * scaleY)
+            };
+        }
+
+        // ============================================================
+        // 9. ОБРАБОТЧИКИ
+        // ============================================================
         function handleClick(e) {
+            if (!isReady) return;
             const { x, y } = getCoords(e);
             const hex = colorPicker.value;
             const r = parseInt(hex.slice(1, 3), 16);
@@ -307,19 +486,33 @@
             const w = canvas.width;
             const h = canvas.height;
             ctx.putImageData(new ImageData(new Uint8ClampedArray(originalData), w, h), 0, 0);
-            logMessage('🔄 Сброшено!');
+            statusEl.innerHTML = '🔄 <span class="ready">Сброшено!</span>';
         }
 
         function saveImage() {
             if (!isReady) return;
             const link = document.createElement('a');
-            link.download = 'раскраска.png';
+            link.download = 'colouring.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
-            logMessage('💾 Сохранено!');
+            statusEl.innerHTML = '💾 <span class="ready">Сохранено!</span>';
         }
 
-        // ========== СОБЫТИЯ ==========
+        function nextTask() {
+            currentTaskIndex = (currentTaskIndex + 1) % tasks.length;
+            updateTask();
+            statusEl.innerHTML = '✅ <span class="ready">Новое задание!</span>';
+        }
+
+        function speakCurrent() {
+            const task = tasks[currentTaskIndex];
+            speakText(task.text);
+            statusEl.innerHTML = '🔊 <span class="ready">Озвучиваю...</span>';
+        }
+
+        // ============================================================
+        // 10. СОБЫТИЯ
+        // ============================================================
         canvas.addEventListener('click', handleClick);
         canvas.addEventListener('touchstart', function(e) {
             e.preventDefault();
@@ -328,9 +521,23 @@
 
         resetBtn.addEventListener('click', resetImage);
         saveBtn.addEventListener('click', saveImage);
+        nextBtn.addEventListener('click', nextTask);
+        speakBtn.addEventListener('click', speakCurrent);
+        speakBtn2.addEventListener('click', speakCurrent);
 
-        // ========== ЗАПУСК ==========
-        autoLoad();
+        // ============================================================
+        // 11. ЗАПУСК
+        // ============================================================
+        // Загружаем голоса для озвучки
+        if (window.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = function() {
+                window.speechSynthesis.getVoices();
+            };
+        }
+
+        loadImage();
     </script>
+
 </body>
 </html>
